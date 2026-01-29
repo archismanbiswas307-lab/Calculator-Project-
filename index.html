@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculator</title>
+    <link rel="stylesheet" href="/Calculator/style.css">
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@500&display=swap");
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins',sans-serif;
+}
+
+body{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+   min-height: 100vw;
+    background: linear-gradient(45deg , #0a0a0a,#3a4454);
+}
+
+.calculator{
+    width: 450px;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.display{
+    position: relative;
+    margin: 30px 0 40px;
+}
+.display input{
+    width: 100%;
+    height: 50px;
+    background: transparent;
+    border: none;
+    font-size: 35px;
+    color: #fff;
+    text-align: right;
+    pointer-events: none;
+}
+
+.display .display-input::placeholder{
+    color: #fff;
+}
+
+.display.active .display-input{
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.3);
+    transform:translateY(-65%) ;
+    transition: 0.5s;
+}
+
+.display .display-result{
+    position: absolute;
+    left: 0;
+    font-size: 15px;
+    transform: translateY(65%);
+}
+
+.display.active .display-result{
+    font-size: 35px;
+    transform: translateY(0);
+    transition: 0.5s;
+}
+
+.buttons{
+    display: grid;
+    grid-template-columns: repeat(4,1fr);
+    gap: 20px;
+}
+
+.buttons button{
+    padding: 15px;
+    background:transparent ;
+    border-radius: 10px;
+    border: none;
+    font-size: 20px;
+    color: #fff;
+    cursor:pointer;
+    box-shadow: -3px  -3px 15px rgba(255, 255, 255, 0.1),3px  3px 15px rgba(0, 0, 0, 0.6);
+}
+
+.buttons .operator{
+    position: relative;
+    color: #0ef;
+}
+
+.buttons .operator span{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50% ,-50%);
+    font-size: 25px;
+}
+.buttons .operator.backspace span {
+    display: flex;
+    align-items:center;
+    width: 22px;
+    height: 20px;
+    border: 2px solid #0ef;
+    border-left-color: transparent;
+    transform: translate(-35%,-50%) scale(.9);
+}
+
+.buttons .operator.backspace span::before{
+    content: ' ';
+    position:absolute;
+    left: -8px;
+    width: 12px;
+    height: 12px;
+    border-left: 2px solid #0ef;
+    border-bottom: 2px solid #0ef;
+    transform: rotate(45deg);
+}
+
+.buttons .operator.backspace span::after{
+    content: 'x';
+    padding: 4px;
+    font-size: 14px;
+    line-height: 10;
+}
+
+
+
+
+
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <input type="text" class="display-input" placeholder="0">
+            <input type="text" class="display-result">
+        </div> 
+        <div class="buttons">
+            <button class="operator">AC</button>
+            <button class="operator">( )</button>
+            <button class="operator">%</button>
+            <button class="operator"><span>&divide;</span></button>
+            <button>7</button>
+            <button>8</button>
+            <button>9</button>
+            <button class="operator"><span>&times;</span></button>
+            <button>4</button>
+            <button>5</button>
+            <button>6</button>
+            <button class="operator"><span>-</span></button>
+            <button>1</button>
+            <button>2</button>
+            <button>3</button>
+            <button class="operator"><span>+</span></button>
+            <button>0</button>
+            <button>.</button>
+            <button class="operator backspace"><span></span></button>
+            <button class="operator"><span>=</span></button>
+        </div>
+    </div>
+    <script>
+        const displayBox=document.querySelector(".display"), 
+displayInput=document.querySelector(".display-input"), 
+displayResult=document.querySelector(".display-result"),
+buttons=document.querySelectorAll("button"),
+operators=["%","÷","×","-","+"];
+let input="",result="",lastCalculation=false;
+
+//main function to handle the calculator function
+const calculate =btnValue =>{
+    const lastChar= input.slice(-1),
+    secondToLastChar =input.slice(-2,-1),
+    withoutLastChar =input.slice(0,-1),
+isLastCharOperator = operators.includes(lastChar),
+isInvalidResult= ["Error","Infinity"].includes(result);
+let {openBracketsCount, closeBracketsCount}= countBrackets(input);
+    //handle equals
+    if( btnValue === "="){
+        if (
+            input === " "||
+            lastChar ==="."||
+            lastChar ==="("||
+            isLastCharOperator && lastChar!="%" ||
+            lastCalculation
+        ) return;
+        while (openBracketsCount > closeBracketsCount) {
+            input+=")";
+            closeBracketsCount++;
+        }
+        const formattedInput =replaceOperators(input);
+        try{
+            const calculatedValue =input.includes("%")? calculatePercentage(input):eval(formattedInput);
+            result=parseFloat(calculatedValue.toFixed(10)).toString();
+        }
+        catch{
+            result="Error";
+        }
+        input+=btnValue;
+        lastCalculation=true;
+        displayBox.classList.add("active");
+    }      
+    else if (btnValue === "AC"){
+        resetCalculator("");
+    }
+    //handle backspace
+    else if(btnValue === ""){
+        if (lastCalculation) {
+            if(isInvalidResult) resetCalculator("");
+            resetCalculator(result.slice(0,-1));
+        }
+        else input=withoutLastChar;
+    }
+    //handle operators
+    else if(operators.includes(btnValue)){
+        if (lastCalculation) {
+            if (isInvalidResult) return;
+            resetCalculator(result + btnValue);
+        }
+        else if(
+            (input === "" ||lastChar === "(") && btnValue != "-" ||
+            input === "-"|| lastChar==="."||
+            secondToLastChar ==="(" && lastChar==="-"||
+            (secondToLastChar==="%" || lastChar==="%") && btnValue === "%"
+        ) return;
+        else if (lastChar === "%") input+=btnValue;
+        else if (isLastCharOperator) input = withoutLastChar + btnValue;
+        else input += btnValue;
+    }
+    // handle decimals
+    else if (btnValue === ".") {
+        const decimalValue= "0.";
+        if(lastCalculation) resetCalculator(decimalValue);
+        else if(lastChar === ")" || lastChar === "%") input+= "×"+decimalValue;
+        else if(input ==="" || isLastCharOperator|| lastChar === "(" ) input+=decimalValue;
+        else{
+            let lastOperatorIndex=-1;
+            for(const operator of operators){
+                const index=input.lastIndexOf(operator);
+                if(index>lastOperatorIndex) lastOperatorIndex=index;
+            }
+
+            if(!input.slice(lastOperatorIndex + 1).includes("."))input +=btnValue;
+        }
+    }
+    //handle brackets
+    else if(btnValue === "( )"){
+        if(lastCalculation){
+         if(isInvalidResult) resetCalculator("(");
+         else resetCalculator(result +"×(");
+        }
+        else if(lastChar ==="(" ||lastChar ===".")return;
+        else if(input === "" ||isLastCharOperator && lastChar !="%") input+="(";
+        else if(openBracketsCount>closeBracketsCount) input+=")";
+        else input+="×(";
+    }
+    //handle numbers
+    else{
+        if (lastCalculation) {
+            resetCalculator(btnValue);
+        }
+        else if (input ==="0") input= btnValue;
+        else if(
+            (operators.includes(secondToLastChar)||secondToLastChar==="(") && lastChar==="0"
+        ) input= withoutLastChar+btnValue;
+        else if(lastChar=== ")"|| lastChar ==="%") input +="×"+btnValue;
+        else input+=btnValue;
+    }
+
+    //update display
+    displayInput.value = input;
+    displayResult.value= result;
+    displayInput.scrollLeft=displayInput.scrollWidth;
+};
+
+// function to replace division (÷) and multiplication symbol(×) with javascript compatible operators like ("/" and "*")
+ const replaceOperators= input=> input.replaceAll("÷", "/").replaceAll("×", "*");
+//function to count brackets in input
+const resetCalculator= newInput=>{
+    input =newInput;
+    result= "";
+    lastCalculation=false;
+    displayBox.classList.remove("active");
+};
+
+//function to count brackets in input
+const countBrackets= input=>{
+    let openBracketsCount=0,
+        closeBracketsCount=0;
+    for(const char of input){
+        if(char ==="(") openBracketsCount++;
+        else if(char ===")") closeBracketsCount++;
+    }
+    return {openBracketsCount, closeBracketsCount};
+};
+//function to handle percentage calculation
+const calculatePercentage= input=>{
+    let processedInput =" ",
+        numberBuffer =" ";
+    const bracketsState=[];
+
+    for(let i=0; i< input.length;i++){
+        const char= input[i];
+
+        if(!isNaN(char) || char ===".") numberBuffer+= char;
+        else if(char ==="%"){
+            const percentValue =parseFloat(numberBuffer)/100,
+                prevOperator=i>0?input[i-numberBuffer.length-1]:"",
+                nextOperator = i+1<input.length && operators.includes(input[i+1])?input[i+1]:"";
+                if(!prevOperator || prevOperator ==="÷" || prevOperator ==="×"||prevOperator==="(") processedInput+=percentValue;
+                else if (prevOperator === "-" || prevOperator ==="+"){
+                    if(nextOperator==="÷"||nextOperator==="×")processedInput+=percentValue;
+                    else processedInput+="("+processedInput.slice(0,-1)+")*"+percentValue;
+            }
+            numberBuffer="";
+        }
+        else if(operators.includes(char) || char ==="(" || char === ")"){
+            if(numberBuffer){
+                processedInput+=numberBuffer;
+                numberBuffer="";
+            }
+
+            if(operators.includes(char)) processedInput+=char;
+            else if(char ==="("){
+                processedInput+="(";
+                bracketsState.push(processedInput);
+                processedInput ="";
+            }
+            else{
+                processedInput+=")";
+                processedInput=bracketsState.pop()+processedInput;
+            }
+        }
+    }
+
+    if(numberBuffer) processedInput +=numberBuffer;
+
+    return eval(replaceOperators(processedInput));
+};
+
+//add click event listeners to all function
+buttons.forEach(button => 
+    button.addEventListener("click", e => calculate(e.target.textContent))
+);
+
+
+
+    </script>
+    <script src="/Calculator/script.js"></script>
+</body>
+</html>
